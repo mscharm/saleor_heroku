@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% load i18n %}
+
+{% block title %}{% trans "Login" %} — {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row login">
+  <div class="col-lg-10 offset-lg-1 col-xl-8 offset-xl-2">
+    <div class="row">
+      <div class="col-md-6">
+        {% url "checkout:index" as checkout_url %}
+        {% include "account/partials/login_form.html" with redirect_field_value=checkout_url %}
+      </div>
+      <div class="col-md-6">
+        <div class="login__register-link">
+          <h2>{% trans "New customer?" %}</h2>
+          <h6>{% trans "Registration is not required!" %}</h6>
+          <img class="checkout-pirate" src="{% static 'img/pirate_login.png' %}" srcset="{% static 'img/pirate-checkout.png' %} 1x, {% static 'img/pirate-checkout2x.png' %} 2x">
+          <p><a href="{% url 'checkout:index' %}" class="btn secondary">{% trans "Continue" %}</a></p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

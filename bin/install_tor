@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+echo "-----> Installing Tor"
+
+TOR_VERSION=0.2.9.8
+TOR_BASENAME="tor-${TOR_VERSION}"
+TOR_ARCHIVE="https://dist.torproject.org/${TOR_BASENAME}.tar.gz"
+
+# make a temp directory
+tempdir="$( mktemp -t tor_XXXX )"
+rm -rf $tempdir
+mkdir -p $tempdir
+
+pushd $tempdir
+echo "-----> Downloading Tor"
+curl -s -L -o tmp-tor.tar.gz $TOR_ARCHIVE
+echo "-----> Extracting Tor"
+tar -zxvf tmp-tor.tar.gz > /dev/null
+rm tmp-tor.tar.gz
+popd
+
+pushd $BUILD_DIR/.heroku/vendor
+rm -rf tor-build
+mv $tempdir/$TOR_BASENAME tor-build
+pushd tor-build
+echo "-----> Building Tor"
+./configure --prefix=$BUILD_DIR/.heroku/vendor/tor --with-libevent-dir=$BUILD_DIR/.heroku/vendor/libevent > /dev/null 2>&1
+make > /dev/null 2>&1
+make install > /dev/null 2>&1
+popd
+rm -rf tor-build
+popd
+
+ln -s -f ../../vendor/tor/bin/tor .heroku/python/bin/tor
+ln -s -f ../../vendor/tor/bin/tor-gencert .heroku/python/bin/tor-gencert
+ln -s -f ../../vendor/tor/bin/torify .heroku/python/bin/torify
+ln -s -f ../../vendor/tor/bin/tor-resolve .heroku/python/bin/tor-resolve
+
+# Cache builds to avoid unnecessary wait times.
+echo $TOR_ARCHIVE > $CACHE_DIR/.src-dist
+
+cat > ${BUILD_DIR}/bin/hide <<EOF
+#!/usr/bin/env bash
+echo "Setting up hidden service"
+cat > ${HOME}/hidden_service/private_key <<EPK
+\${HIDDEN_PRIVATE_KEY}
+EPK
+echo \${HIDDEN_DOT_ONION} > ${HOME}/hidden_service/hostname
+echo "HiddenServiceDir ${HOME}/hidden_service/" > $HOME/tor/torrc
+echo "HiddenServicePort 80 127.0.0.1:\${PORT}" >> $HOME/tor/torrc
+# Use -f to be safe here.
+tor -f $HOME/tor/torrc &
+exec \$*
+EOF
+
+chmod a+x ${BUILD_DIR}/bin/hide
+
+echo "-----> Finished installing tor"

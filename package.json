@@ -38,7 +38,7 @@
     "select2": "^4.0.3",
     "sortablejs": "^1.4.2",
     "tether": "^1.4.0",
-    "underscore": "^1.8.3"
+    "underscore": "^1.12.1"
   },
   "devDependencies": {
     "autoprefixer": "^6.4.1",
